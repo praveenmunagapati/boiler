@@ -16,7 +16,7 @@ void usage(char *prog) {
  
 static void hexdump(char *buf, size_t len) {
   size_t i,n=0;
-  char c;
+  unsigned char c;
   while(n < len) {
     fprintf(stderr,"%08x ", (int)n);
     for(i=0; i < 16; i++) {
