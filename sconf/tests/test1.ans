@@ -1,0 +1,55 @@
+trying name=joe,id=10
+name: [joe] (length 3)
+id: 10 (length 4)
+
+trying id=10,name=joe
+name: [joe] (length 3)
+id: 10 (length 4)
+
+trying id=10,name=joe,name=john
+name: [john] (length 4)
+id: 10 (length 4)
+
+trying id=10,crab=apple,name=joe
+name: [joe] (length 3)
+id: 10 (length 4)
+
+trying crab=apple,name=joe
+name: [joe] (length 3)
+id: 10 (length 0)
+
+trying crab=apple,name=joe
+name: [joe] (length 3)
+id: 10 (length 0)
+
+trying id=99,crab=apple,name=joe
+name: [joe] (length 3)
+id: 99 (length 4)
+
+trying ,crab=apple,name=joe
+parse error
+
+trying =crab=apple,name=joe
+parse error
+
+trying =crab=apple,name
+parse error
+
+trying apple,name
+parse error
+
+trying apple,name=1
+parse error
+
+trying apple,,name
+parse error
+
+trying id=1,=,name=al
+parse error
+
+trying id=abc
+parse error
+
+trying name=joe,id=abc
+parse error
+
