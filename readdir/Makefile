@@ -1,4 +1,4 @@
-all: readdir
+all: readdir readdir-lstat
 
 .PHONY: clean
 
