@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <string.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -30,7 +31,7 @@ int main(int argc, char *argv[]) {
       default:         type = "other";      break;
     }
 
-    printf(" %d: inode %d type %s %s\n", ++i, dent->d_ino, type, dent->d_name);
+    printf(" %d: inode %lu type %s %s\n", ++i, (unsigned long)dent->d_ino, type, dent->d_name);
   }
 
   printf("%d entries found.\n", i);
