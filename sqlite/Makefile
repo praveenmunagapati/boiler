@@ -1,10 +1,13 @@
-OBJS=simple standard 
+OBJS=simple standard insert
 all: $(OBJS)
 
 simple: simple.c
 	$(CC) -o $@ $< -lsqlite3
 
 standard: standard.c
+	$(CC) -o $@ $< -lsqlite3
+
+insert: insert.c
 	$(CC) -o $@ $< -lsqlite3
 
 .PHONY: clean
