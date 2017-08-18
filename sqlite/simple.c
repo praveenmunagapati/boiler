@@ -11,7 +11,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
 }
 
 int main(int argc, char **argv){
-  sqlite3 *db;
+  sqlite3 *db=NULL;
   char *zErrMsg = 0;
   int rc;
 

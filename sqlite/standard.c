@@ -27,7 +27,7 @@ int dump_columns(sqlite3_stmt *ppStmt) {
 }
 
 int main(int argc, char **argv){
-  sqlite3 *db;
+  sqlite3 *db=NULL;
   sqlite3_stmt *ppStmt;
   int rc=-1, sc, more;
 

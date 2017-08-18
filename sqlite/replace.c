@@ -2,13 +2,27 @@
 #include <sqlite3.h>
 
 /*
-  an example of creating a table using SQL's CREATE table
 
+  An example of creating a table using CREATE TABLE IF NOT EXISTS,
+  
+  "IF NOT EXISTS"
+   
+   see https://www.sqlite.org/lang_createtable.html
+
+  When this program inserts two rows having the same primary key value,
+  using INSERT OR REPLACE it overwrites the existing row.
+
+  "INSERT OR REPLACE"
+
+   see https://www.sqlite.org/lang_insert.html
+   see https://www.sqlite.org/lang_conflict.html
  */
 
 int exec_sql(sqlite3 *db, char *sql) {
   sqlite3_stmt *ppStmt=NULL;
   int sc, rc = -1;
+
+  fprintf(stderr, "Executing %s\n", sql);
 
   sc = sqlite3_prepare_v2(db, sql, -1, &ppStmt, NULL);
   if( sc!=SQLITE_OK ){
@@ -58,7 +72,13 @@ int main(int argc, char **argv){
     goto done;
   }
 
-  sql = "CREATE TABLE people (name TEXT PRIMARY KEY, age INTEGER);";
+  sql = "CREATE TABLE IF NOT EXISTS people (name TEXT PRIMARY KEY, age INTEGER);";
+  if (exec_sql(db, sql) < 0) goto done;
+
+  sql = "INSERT OR REPLACE INTO people VALUES (\"isaac\", 12);";
+  if (exec_sql(db, sql) < 0) goto done;
+
+  sql = "INSERT OR REPLACE INTO people VALUES (\"isaac\", 13);";
   if (exec_sql(db, sql) < 0) goto done;
 
   rc = 0;
