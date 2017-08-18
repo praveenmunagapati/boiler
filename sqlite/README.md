@@ -41,11 +41,23 @@ Run "make" to compile simple from simple.c.
 
 The simple.c example uses the convenience wrapper `sqlite3_exec`.
 
-## Datatypes
+### C examples
 
-https://www.sqlite.org/datatype3.html
+The programs `create.c`, `insert.c`, and `standard.c` show basic C API usage.
 
-## Core C API 
+  % make
+  % rm -f example.db
+  % ./create example.db
+  % ./insert example.db
+  % ./standard example.db
+  name: ben age 8
+  name: isaac age 13
 
-https://www.sqlite.org/cintro.html
+## SQLite Documentation
+
+ * Core C API: https://www.sqlite.org/cintro.html
+ * SQL language: https://www.sqlite.org/lang.html 
+ * Datatypes: https://www.sqlite.org/datatype3.html
+
+
 
