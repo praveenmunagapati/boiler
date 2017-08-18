@@ -3,6 +3,25 @@
 
 /*
 
+   This example of using sqlite uses the function sequence:
+
+				open/prepare/bind/step/close
+
+   to insert values into the database.
+
+   To try it, first create the example.db:
+
+    % sqlite3 example.db
+    sqlite> create table people (name text, age integer);
+    sqlite> .exit
+
+   Then run this program to insert two rows:
+
+   % ./insert example.db
+
+   Then query the table:
+
+   % ./standard example.db
  */
 
 int reset(sqlite3_stmt *ppStmt) {
