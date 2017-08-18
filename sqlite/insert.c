@@ -21,7 +21,7 @@
 
    Then query the table:
 
-   % ./standard example.db
+   % ./select example.db
  */
 
 int reset(sqlite3_stmt *ppStmt) {

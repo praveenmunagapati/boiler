@@ -15,7 +15,7 @@
 
    Then run this program:
 
-   % ./standard example.db
+   % ./select example.db
 
  */
 

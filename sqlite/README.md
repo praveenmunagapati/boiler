@@ -43,13 +43,13 @@ The simple.c example uses the convenience wrapper `sqlite3_exec`.
 
 ### C examples
 
-The programs `create.c`, `insert.c`, and `standard.c` show basic C API usage.
+The programs `create.c`, `insert.c`, and `select.c` show basic C API usage.
 
   % make
   % rm -f example.db
   % ./create example.db
   % ./insert example.db
-  % ./standard example.db
+  % ./select example.db
   name: ben age 8
   name: isaac age 13
 

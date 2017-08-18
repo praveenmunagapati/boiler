@@ -1,10 +1,10 @@
-OBJS=simple standard insert create replace
+OBJS=simple select insert create replace
 all: $(OBJS)
 
 simple: simple.c
 	$(CC) -o $@ $< -lsqlite3
 
-standard: standard.c
+select: select.c
 	$(CC) -o $@ $< -lsqlite3
 
 replace: replace.c
