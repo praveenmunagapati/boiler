@@ -54,7 +54,7 @@ int main(int argc, char **argv){
 
   sc = sqlite3_open(argv[1], &db);
   if( sc ){
-    fprintf(stderr, "sqlite3_open: %s\n", sqlite3_errmsg(db));
+    fprintf(stderr, "sqlite3_open: %s\n", sqlite3_errstr(sc));
     goto done;
   }
 
