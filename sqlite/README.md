@@ -1,9 +1,9 @@
 See https://www.sqlite.org
 
 Sqlite is probably installed on your Linux host already. You'll need to add the
-development headers to compile to the C API. On a yum based host,
+development headers to compile to the C API. On a typical yum based host,
 
-    yum install sqlite3
+    yum install sqlite
     yum install sqlite-devel
 
 ## Sqlite3
@@ -59,5 +59,51 @@ The programs `create.c`, `insert.c`, and `select.c` show basic C API usage.
  * SQL language: https://www.sqlite.org/lang.html 
  * Datatypes: https://www.sqlite.org/datatype3.html
 
+## Lessons learned
 
+### Proceed to `SQLITE_DONE`
+
+Always let `sqlite3_step` progress until it returns `SQLITE_DONE`- even if
+the query can only ever return one row. The memory used to get the columns from
+a row is held until the row is stepped to the next row (or to `SQLITE_DONE`).
+Furthermore other queries can eventually show the table as locked unless you
+release it by stepping all the way to `SQLITE_DONE`.
+
+### Increase busy timeout 
+
+Increase the timeout for lock acquisition. I use 10 seconds. 
+
+    sqlite3_busy_timeout(db, 10000);
+
+Otherwise the application can give up on the lock so fast, that even a brief
+competing query from a user's sqlite3 session can disrupt the application.
+
+### Use "IF NOT EXISTS" and "OR REPLACE"
+
+It's easy to create a table and its indexes if they don't already exist:
+
+    CREATE TABLE IF NOT EXISTS ...
+    CREATE INDEX IF NOT EXISTS ...
+
+### Use "OR REPLACE"
+
+Replacing a row (where primary key of the insert matches an existing row) can
+be done as a REPLACE instead of a DELETE/INSERT.
+
+    INSERT OR REPLACE INTO ...
+
+### Bind indexes are 1-based, column indexes are 0-based
+
+    sqlite3_bind_text(ps_del, 1, ...); # bind first value (1)
+    sqlite3_column_int64(ps_query, 0); # get first column (0)
+
+## Examples
+
+A few examples of SQL to jog the memory:
+
+    CREATE TABLE IF NOT EXISTS files (name TEXT PRIMARY KEY, size INTEGER);
+    CREATE INDEX IF NOT EXISTS bysize ON files(size);
+    DELETE FROM files WHERE name = "blue";
+    SELECT SUM(size) from files;
+    INSERT OR REPLACE INTO files VALUES ("red", 100);
 
