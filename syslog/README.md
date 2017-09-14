@@ -73,4 +73,22 @@ Syslog messages were originally sent over UDP/514 as datagrams.  There are now
 standards for transmitting syslog over TCP and TLS, standardized in more detail
 in [RFC 5424](https://tools.ietf.org/html/rfc5424).
 
+# Stdout/stderr to syslog
 
+This is an example of using basic Unix plumbing to connect the stdout and stderr
+of a program to syslog, without modifying the program.
+
+The program `io-to-ux.c` re-opens stdout and stderr into a Unix domain socket.
+Then it executes an arbitrary user-specified program, whose output is now
+directed into the socket.  A companion program, `ux-to-syslog.c`, binds the
+socket and directs incoming content to syslog. The companion program must be
+started first:
+
+    % ./ux-to-syslog -f log.sock
+
+Leave it running, then in a second window, run this example below. We have
+arbitrarily chosen `ls /etc` as the program whose output to send to syslog.
+
+    % ./io-to-ux -f log.sock ls /etc
+
+If you now tail the syslog, you should see the output of `ls /etc` there.
