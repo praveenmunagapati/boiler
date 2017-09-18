@@ -1,3 +1,5 @@
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -5,24 +7,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-
-/*
-  From "The Linux Programming Interface", by Michael Kerrisk, section 61.13:
-
-  > 61.13.4 Receiving Sender Credentials
-  > Another example of the use of ancillary data is for receiving sender
-  > credentials via a UNIX domain socket. These credentials consist of the user
-  > ID, the group ID, and the process ID of the sending process. The sender may
-  > specify its user and group IDs as the corresponding real, effective, or saved
-  > set IDs. This allows the receiving process to authenticate a sender on the
-  > same host. For further details, see the socket(7) and unix(7) manual pages.
-  > Unlike passing file descriptors, passing sender credentials is not specified
-  > in SUSv3.  On Linux, a privileged process can fake the user ID, group ID, and
-  > process ID that are passed as credentials if it has, respectively, the
-  > CAP_SETUID, CAP_SETGID, and CAP_SYS_ADMIN capabilities.
-*/
 
 struct {
   int verbose;
@@ -35,7 +19,7 @@ struct {
 };
 
 void usage() {
-  fprintf(stderr,"usage: %s [-v] [-f <socket>]\n", cfg.prog);
+  fprintf(stderr,"usage: %s [-v] -f <socket> <file>\n", cfg.prog);
   exit(-1);
 }
 
@@ -65,27 +49,45 @@ int open_socket(void) {
   return rc;
 }
 
-/* pass pid/uid/gid creds over unix domain socket sock_fd */
-int pass_creds(void) {
+/* pass fd over unix domain socket sock_fd */
+int pass_fd(int fd, int sock_fd) {
   struct msghdr hdr;
   struct iovec iov;
   int rc = -1, sc;
+
+  /* Allocate a char array of suitable size to hold the ancillary data.
+     However, since this buffer is in reality a 'struct cmsghdr', use a
+     union to ensure that it is aligned as required for that structure. */
+  union {
+    struct cmsghdr cmh;
+    char   control[CMSG_SPACE(sizeof(int))]; /* sized to hold an fd (int) */
+  } control_un;
+  memset(&control_un, 0, sizeof(control_un));
 
   /* we have to transmit at least 1 byte to send ancillary data */
   char unused = '*';
   iov.iov_base = &unused;
   iov.iov_len = sizeof(unused);
 
+  /* point to iov to transmit */
   hdr.msg_iov = &iov;
   hdr.msg_iovlen = 1;
   /* no dest address; socket is connected */
   hdr.msg_name = NULL; 
   hdr.msg_namelen = 0;
-  /* control is null; transmit real creds */
-  hdr.msg_control = NULL;
-  hdr.msg_controllen = 0;
+  /* control is where specificy SCM_RIGHTS (fd pass)*/
+  hdr.msg_control = control_un.control;
+  hdr.msg_controllen = sizeof(control_un.control);
 
-  sc = sendmsg(cfg.sock_fd, &hdr, 0);
+  /* poke into the union which is now inside hdr */
+  struct cmsghdr *hp;
+  hp = CMSG_FIRSTHDR(&hdr);
+  hp->cmsg_len = CMSG_LEN(sizeof(int));
+  hp->cmsg_level = SOL_SOCKET;
+  hp->cmsg_type = SCM_RIGHTS;
+  *((int *) CMSG_DATA(hp)) = fd;
+
+  sc = sendmsg(sock_fd, &hdr, 0);
   if (sc < 0) {
     fprintf(stderr,"sendmsg: %s\n", strerror(errno));
     goto done;
@@ -98,8 +100,9 @@ int pass_creds(void) {
 }
 
 int main(int argc, char *argv[]) {
+  int opt, rc=-1, sc, fd;
   cfg.prog = argv[0];
-  int opt, rc=-1;
+  pid_t pid;
 
   while ( (opt = getopt(argc,argv,"vhf:")) > 0) {
     switch(opt) {
@@ -109,8 +112,21 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (cfg.sock == NULL) usage();
+  if (optind >= argc) usage();
+
+  /* open the unix domain socket (client end) */
   if (open_socket() < 0) goto done;
-  if (pass_creds() < 0) goto done;
+
+  /* open the file. we'll pass its fd over socket */
+  fd = open(argv[optind], O_RDONLY);
+  if (fd < 0) {
+    fprintf(stderr,"open: %s\n", strerror(errno));
+    goto done;
+  }
+
+  /* pass descriptor fd to peer over socket */
+  if (pass_fd(fd, cfg.sock_fd) < 0) goto done;
 
   rc = 0;
  

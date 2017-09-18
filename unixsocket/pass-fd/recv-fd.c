@@ -114,6 +114,7 @@ int handle_socket(void) {
     goto done;
   }
 
+#if 0
   /* set SO_PASSCRED option on connected client socket; get creds in recvmsg */
   int one = 1;
   sc = setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &one, sizeof(one));
@@ -121,6 +122,7 @@ int handle_socket(void) {
     fprintf(stderr,"setsockopt: %s\n", strerror(errno));
     goto done;
   }
+#endif
 
   if (new_epoll(EPOLLIN, fd)) goto done;
 
@@ -158,22 +160,45 @@ int handle_signal() {
   return rc;
 }
 
-int handle_client(int fd) {
-  char buf[1000], *l;
-  ssize_t nr, n;
+int utilize(int fd) {
+  char buf[1000];
   int rc = -1;
+  ssize_t nr;
+
+  /* read some bytes of passed_fd and show it */
+  fprintf(stderr, "reading fd %d...\n", fd);
+  nr = read(fd, buf, sizeof(buf));
+  if (nr < 0) {
+    fprintf(stderr,"read: %s\n", strerror(errno));
+    goto done;
+  } 
+  if (nr == 0) {
+    fprintf(stderr,"read: eof\n");
+  } else {
+    fprintf(stderr, "read %ld bytes: %.*s\n", nr, (int)nr, buf);
+  }
+
+  rc = 0;
+
+ done:
+  close(fd); /* close the passed descriptor */
+  return rc;
+}
+int handle_client(int fd) {
+  char buf[1000];
+  ssize_t nr, n;
+  int rc = -1, passed_fd = -1;
 
 	/* Allocate a char array of suitable size to hold the ancillary data.
 		 However, since this buffer is in reality a 'struct cmsghdr', use a
 		 union to ensure that it is aligned as required for that structure. */
 	union {
 		struct cmsghdr cmh;
-		char   control[CMSG_SPACE(sizeof(struct ucred))];
+		char   control[CMSG_SPACE(sizeof(int))];
 	} control_un;
-  memset(&control_un, 0, sizeof(control_un));
 
   /* Set 'control_un' to describe ancillary data that we want to receive */
-  control_un.cmh.cmsg_len = CMSG_LEN(sizeof(struct ucred));
+  control_un.cmh.cmsg_len = CMSG_LEN(sizeof(int));  /* fd is sizeof(int) */
   control_un.cmh.cmsg_level = SOL_SOCKET;
   control_un.cmh.cmsg_type = SCM_CREDENTIALS;
 
@@ -201,22 +226,20 @@ int handle_client(int fd) {
   } else {
 
     assert(nr > 0);
-
-    /* Extract credentials information from ancillary data if present */
-    struct cmsghdr *cmhp;
-    cmhp = CMSG_FIRSTHDR(&hdr);
-    if (cmhp                                              && 
-       (cmhp->cmsg_len == CMSG_LEN(sizeof(struct ucred))) &&
-       (cmhp->cmsg_level == SOL_SOCKET)                   && 
-       (cmhp->cmsg_type == SCM_CREDENTIALS)) {
-
-      struct ucred *ucredp = (struct ucred *) CMSG_DATA(cmhp);
-      fprintf(stderr, "Received credentials pid=%ld, uid=%ld, gid=%ld\n",
-              (long) ucredp->pid, (long) ucredp->uid, (long) ucredp->gid);
-    }
-
-    /* emit any bytes of actual data received */
     fprintf(stderr, "received %ld bytes: %.*s\n", nr, (int)nr, buf);
+
+    /* Extract fd from ancillary data if present */
+    struct cmsghdr *hp;
+    hp = CMSG_FIRSTHDR(&hdr);
+    if (hp                                              && 
+       (hp->cmsg_len == CMSG_LEN(sizeof(int)))          &&
+       (hp->cmsg_level == SOL_SOCKET)                   && 
+       (hp->cmsg_type == SCM_RIGHTS)) {
+
+      passed_fd = *(int*) CMSG_DATA(hp);
+      fprintf(stderr, "Received fd %d\n", passed_fd);
+      utilize(passed_fd);
+    }
   }
 
   rc = 0;
