@@ -1,13 +1,13 @@
-OBJS=syslogger io-to-ux ux-to-syslog
+OBJS=syslogger sockout socksrv
 all: $(OBJS)
 
 syslogger: syslogger.c
 	$(CC) -o $@ $<
 
-io-to-ux: io-to-ux.c
+sockout: sockout.c
 	$(CC) -o $@ $<
 
-ux-to-syslog: ux-to-syslog.c
+socksrv: socksrv.c
 	$(CC) -o $@ $<
 
 .PHONY: clean

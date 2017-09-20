@@ -71,7 +71,7 @@ int setup_listener(void) {
   int sc, rc = -1;
 
   cfg.sock_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (cfg.sock_fd == -1) {
+  if (cfg.sock_fd < 0) {
     fprintf(stderr,"socket: %s\n", strerror(errno));
     goto done;
   }
@@ -79,16 +79,15 @@ int setup_listener(void) {
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
 
-  /* this is where the autobind is requested */
+  /* request autobind */
   socklen_t want_autobind = sizeof(sa_family_t);
   sc = bind(cfg.sock_fd, (struct sockaddr*)&addr, want_autobind);
-  if (sc == -1) {
+  if (sc < 0) {
     fprintf(stderr,"bind: %s\n", strerror(errno));
     goto done;
   }
 
-  /* display in hex the abstract socket name. we know it's length. 
-   * the returned socket name is NOT nul terminated */
+  /* display the abstract socket name. the socket name isn't nul terminated! */
   struct sockaddr_un tmp;
   socklen_t addrlen = sizeof(struct sockaddr_un);
 	sc = getsockname(cfg.sock_fd, (struct sockaddr *)&tmp, &addrlen);
@@ -101,7 +100,7 @@ int setup_listener(void) {
 
   /* begin listening */
   sc = listen(cfg.sock_fd, 5);
-  if (sc == -1) {
+  if (sc < 0) {
     fprintf(stderr,"listen: %s\n", strerror(errno));
     goto done;
   }

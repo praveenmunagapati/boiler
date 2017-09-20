@@ -134,7 +134,6 @@ int handle_signal() {
 
 /* the standard output or error stream may contain multiple lines.
  * make a basic attempt to syslog the lines independently.
- * TODO sockaddr un of remote end
  */
 int produce_log(char *b, ssize_t n) {
   char *l, *eol;
@@ -150,8 +149,8 @@ int produce_log(char *b, ssize_t n) {
 }
 
 int handle_client(int fd) {
-  char buf[1000], *l;
-  ssize_t nr, n;
+  char buf[1000];
+  ssize_t nr;
   int rc = -1;
 
   nr = read(fd, buf, sizeof(buf));

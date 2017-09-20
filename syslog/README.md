@@ -78,17 +78,17 @@ in [RFC 5424](https://tools.ietf.org/html/rfc5424).
 This is an example of using basic Unix plumbing to connect the stdout and stderr
 of a program to syslog, without modifying the program.
 
-The program `io-to-ux.c` re-opens stdout and stderr into a Unix domain socket.
+The program `sockout.c` re-opens stdout and stderr into a Unix domain socket.
 Then it executes an arbitrary user-specified program, whose output is now
-directed into the socket.  A companion program, `ux-to-syslog.c`, binds the
-socket and directs incoming content to syslog. The companion program must be
+directed into the socket.  A companion program, `socksrv.c`, binds the
+socket and directs incoming content to syslog. The latter program must be
 started first:
 
-    % ./ux-to-syslog -f log.sock
+    % ./socksrv -f log.sock
 
-Leave it running, then in a second window, run this example below. We have
-arbitrarily chosen `ls /etc` as the program whose output to send to syslog.
+While left running, run the example below in a second window. This example
+arbitrarily uses `ls /etc` as the program whose output to send to syslog.
 
-    % ./io-to-ux -f log.sock ls /etc
+    % ./sockout -f log.sock ls /etc
 
 If you now tail the syslog, you should see the output of `ls /etc` there.
