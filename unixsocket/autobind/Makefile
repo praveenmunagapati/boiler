@@ -1,4 +1,4 @@
-PROGS=autobind
+PROGS=autobind cli
 OBJS=$(patsubst %,%.o,$(PROGS))
 all: $(OBJS) $(PROGS) 
 

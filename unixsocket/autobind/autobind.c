@@ -87,7 +87,7 @@ int setup_listener(void) {
     goto done;
   }
 
-  /* display the abstract socket name. the socket name isn't nul terminated! */
+  /* display the abstract socket name. the socket name isn't null terminated! */
   struct sockaddr_un tmp;
   socklen_t addrlen = sizeof(struct sockaddr_un);
 	sc = getsockname(cfg.sock_fd, (struct sockaddr *)&tmp, &addrlen);
@@ -95,7 +95,7 @@ int setup_listener(void) {
     fprintf(stderr,"getsockname: %s\n", strerror(errno));
     goto done;
   }
-  fprintf(stderr, "socket autobound name in hex and ASCII (. for nul):\n");
+  fprintf(stderr, "socket name in hex and ASCII (. for null byte):\n");
   hexdump(tmp.sun_path, addrlen-sizeof(sa_family_t));
 
   /* begin listening */
