@@ -1,0 +1,9 @@
+[Unit]
+Description=Example service
+
+[Service]
+ExecStart=/bin/sleep 100
+
+[Install]
+Also=example.socket
+#WantedBy=multi-user.target

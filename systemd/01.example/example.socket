@@ -1,0 +1,8 @@
+[Unit]
+Description=Example service socket
+
+[Socket]
+ListenStream=/tmp/example.sock
+
+[Install]
+WantedBy=sockets.target
