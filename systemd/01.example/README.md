@@ -1,26 +1,32 @@
-We'll use a test program (srv) to consume from the activated socket, and
-another one (cli) to connect to it.
+Simple on-demand service
+
+We'll install example.socket and start it. We also install example.service.
+Systemd will establish the socket in a listening state, and will start the
+associated example.service when we make a connection to the socket.
 
     % make
     % sudo cp srv /usr/bin/example
-
-The installation prefix /usr/bin has to match what is in the .service file.
-
-    % sudo cp example.service example.socket /etc/systemd/system
+    % sudo cp example.socket /etc/systemd/system
+    % sudo cp example.service /etc/systemd/system
     % sudo systemctl daemon-reload
-    % systemctl start example.socket
+    % sudo systemctl start example.socket
 
-Note appearance of 
+Note the appearance of 
 
     /tmp/example.sock
 
-in the filesystem. Also, because this example service is using on-demand
-startup- (notice the absence of WantedBy in the example.service), there is 
-no example process running. But if you connect to the example socket, the
-daemon gets started.
+in the filesystem. Systemd created it and is polling on connection to it.
 
-    %  ./cli /tmp/example.sock
-    % ps aux | grep example
+This example service is using on-demand startup.  Notice the
+absence of WantedBy in the example.service. Instead a connection to
+example.socket automatically starts example.service.
 
-If "example" exits then systemd restarts it only when there is a new connection
-to the UNIX domain socket.
+    %  ./cli -f /tmp/example.sock
+    %  sudo systemctl status example.service
+
+This particular server (/usr/bin/example) is coded to drain the client input
+and then exit. It relies on systemd to restart if a new connection is made.
+
+Shut it down:
+
+    % sudo systemctl stop example.socket example.service
