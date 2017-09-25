@@ -5,23 +5,35 @@
 #include <sys/un.h>
 #include <stdlib.h>
 
-/* this server is designed to run under systemd (only),
-   it expects systemd to exec this process with the 
-   listening socket already opened on fd 3.
-   our job is to accept it and handle the client.
-   afterward, we close the client. 
-
-   this version of the server stays running, accepting
-   new client connections, rather than letting systemd
-   restart it when a new connection comes in.
+/* 
+ * bind, listen and accept clients to our unix domai socket.
  */
 
 int main(int argc, char *argv[]) {
+  struct sockaddr_un addr;
   int fd,ad,rc=-1;
   char buf[100];
 
-  /* accept on fd 3. we are hardcoding it for this example */
-  fd = 3;
+  if ( (fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+    fprintf(stderr, "socket: %s\n", strerror(errno));
+    goto done;
+  }
+
+  char *socket_path = "/tmp/example.sock";
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path)-1);
+  unlink(socket_path);
+
+  if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    fprintf(stderr, "bind: %s\n", strerror(errno));
+    goto done;
+  }
+
+  if (listen(fd, 5) == -1) {
+    fprintf(stderr, "listen: %s\n", strerror(errno));
+    goto done;
+  }
 
   while (1) {
     if ( (ad = accept(fd, NULL, NULL)) == -1) {
