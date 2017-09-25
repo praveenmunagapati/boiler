@@ -4,12 +4,12 @@ We'll install example.socket and start it. We also install example.service.
 Systemd will establish the socket in a listening state, and will start the
 associated example.service when we make a connection to the socket.
 
-    % make
-    % sudo cp srv /usr/bin/example
-    % sudo cp example.socket /etc/systemd/system
-    % sudo cp example.service /etc/systemd/system
-    % sudo systemctl daemon-reload
-    % sudo systemctl start example.socket
+    make
+    sudo cp srv /usr/bin/example
+    sudo cp example.socket /etc/systemd/system
+    sudo cp example.service /etc/systemd/system
+    sudo systemctl enable example.socket
+    sudo systemctl start example.socket
 
 Note the appearance of 
 
@@ -21,12 +21,16 @@ This example service is using on-demand startup.  Notice the
 absence of WantedBy in the example.service. Instead a connection to
 example.socket automatically starts example.service.
 
-    %  ./cli -f /tmp/example.sock
-    %  sudo systemctl status example.service
+    ./cli -f /tmp/example.sock
+    sudo systemctl status example.service
 
 This particular server (/usr/bin/example) is coded to drain the client input
 and then exit. It relies on systemd to restart if a new connection is made.
 
-Shut it down:
+Shut down and clean up:
 
-    % sudo systemctl stop example.socket example.service
+    sudo systemctl stop example.socket 
+    sudo systemctl disable example.socket 
+    sudo rm -f /etc/systemd/system/example.socket 
+    sudo rm -f /etc/systemd/system/example.service
+    sudo rm -f /usr/bin/example
