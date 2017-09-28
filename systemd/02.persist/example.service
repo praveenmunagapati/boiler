@@ -1,0 +1,9 @@
+[Unit]
+Description=Example service
+
+[Service]
+ExecStart=/usr/bin/example
+
+[Install]
+Also=example.socket
+#WantedBy=multi-user.target

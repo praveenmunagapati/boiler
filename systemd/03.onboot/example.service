@@ -2,8 +2,8 @@
 Description=Example service
 
 [Service]
-ExecStart=/bin/sleep 100
+ExecStart=/usr/bin/example
 
 [Install]
 Also=example.socket
-#WantedBy=multi-user.target
+WantedBy=multi-user.target

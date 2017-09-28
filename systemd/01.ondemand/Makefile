@@ -1,4 +1,4 @@
-PROGS=cli
+PROGS=cli srv
 OBJS=$(patsubst %,%.o,$(PROGS))
 all: $(OBJS) $(PROGS) 
 
