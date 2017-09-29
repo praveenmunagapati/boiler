@@ -1,4 +1,5 @@
-all: epoll
+OBJS= epoll keys
+all: $(OBJS)
 
 clean:
-	rm -f *.o epoll
+	rm -f *.o $(OBJS)
