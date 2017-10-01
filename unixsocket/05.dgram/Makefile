@@ -1,4 +1,4 @@
-PROGS=send recv
+PROGS=send recv send-pid recv-pid
 OBJS=$(patsubst %,%.o,$(PROGS))
 all: $(OBJS) $(PROGS) 
 
