@@ -18,8 +18,10 @@ On window 1 you'll see messages like this:
 
     Credentials from SO_PEERCRED: pid=5829, euid=501, egid=501
 
-With these examples, recv-easy is a basic Unix domain socket server and
-send-easy is a simple Unix domain socket client.
+The man page for socket(7) notes:
+
+> The  returned  credentials are those that were in effect at the time of the
+> call to connect(2)
 
 ## Hard way
 
