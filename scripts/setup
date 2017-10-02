@@ -65,20 +65,12 @@ then
  `git config --global user.email "$EMAIL"`
  `git config --global core.editor vim`
  `git config --global push.default simple`
+ echo
+ echo "if you using a signing key, also run:"
+ echo "git config --global commit.gpgsign true"
+ echo "echo 'export GPG_TTY=\$(tty)' >> ~/.bash_profile"
+ echo "gpg --list-secret-keys --keyid-format LONG"
+ echo "then select desired signing key e.g. sec 2048R/<keyid>"
+ echo "git config --global user.signingkey <keyid>"
 fi
 
-# preferred packages (Ubuntu/Mint)
-# gcc-doc
-# glibc-doc
-# make-doc
-# bash-doc
-# vim
-# vim-doc
-# autoconf
-# automake
-# libtool
-# perl-doc
-# valgrind
-# gdb
-# strace
-# libpcap-dev
