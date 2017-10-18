@@ -20,8 +20,10 @@
  */
 
 int dump_columns(sqlite3_stmt *ppStmt) {
-  const char *name = sqlite3_column_text(ppStmt, 0);
-  int age = sqlite3_column_int(ppStmt, 1);
+  const unsigned char *name;
+  int age;
+  name = sqlite3_column_text(ppStmt, 0);
+  age = sqlite3_column_int(ppStmt, 1);
   printf("name: %s age %d\n", name, age);
   return 0;
 }

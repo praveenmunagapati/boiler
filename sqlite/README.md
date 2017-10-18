@@ -1,10 +1,17 @@
 See https://www.sqlite.org
 
 Sqlite is probably installed on your Linux host already. You'll need to add the
-development headers to compile to the C API. On a typical yum based host,
+development headers to compile to the C API. 
+
+On a typical yum based host:
 
     yum install sqlite
     yum install sqlite-devel
+
+Or on Ubuntu using apt:
+
+    apt install sqlite3
+    apt install libsqlite3-dev
 
 ## Sqlite3
 
@@ -52,6 +59,9 @@ The programs `create.c`, `insert.c`, and `select.c` show basic C API usage.
   % ./select example.db
   name: ben age 8
   name: isaac age 13
+
+There is an example of scanning a directory tree and populating a table of
+filenames in `tree_to_db.c`.
 
 ## SQLite Documentation
 

@@ -83,7 +83,7 @@ int do_insert(sqlite3_stmt *ppStmt, char *name, int age) {
 
 int main(int argc, char **argv){
   sqlite3_stmt *ppStmt;
-  int rc=-1, sc, more;
+  int rc=-1, sc;
   sqlite3 *db=NULL;
   char *sql;
 

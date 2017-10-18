@@ -57,7 +57,7 @@ int exec_sql(sqlite3 *db, char *sql) {
 }
 
 int main(int argc, char **argv){
-  int rc=-1, sc, more;
+  int rc=-1, sc;
   sqlite3 *db=NULL;
   char *sql;
 

@@ -1,22 +1,20 @@
-OBJS=simple select insert create replace
-all: $(OBJS)
+PROGS=simple select insert create replace tree_to_db
+OBJS=$(patsubst %,%.o,$(PROGS))
 
-simple: simple.c
-	$(CC) -o $@ $< -lsqlite3
+CFLAGS=-g -Wall -Wextra
+LDFLAGS=-lsqlite3
 
-select: select.c
-	$(CC) -o $@ $< -lsqlite3
+all: $(OBJS) $(PROGS)
 
-replace: replace.c
-	$(CC) -o $@ $< -lsqlite3
+# static pattern rule: multiple targets 
 
-insert: insert.c
-	$(CC) -o $@ $< -lsqlite3
+$(OBJS): %.o: %.c
+	$(CC) -c $(CFLAGS) $< 
 
-create: create.c
-	$(CC) -o $@ $< -lsqlite3
+$(PROGS): %: %.o 
+	$(CC) -o $@ $(CFLAGS) $< $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(PROGS)
