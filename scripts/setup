@@ -3,7 +3,7 @@
 # sets my preferences in some standard init files
 
 cat >>$HOME/.bashrc <<"EOF"
-#export PS1="\[\e[93;1m\][\u@\h \W]\[\e[0m\] "
+export PS1="\[\e[93;1m\][\u@\h \W]\[\e[0m\] "
 export LS_COLORS='no=00:di=01;34;04:ln=01;36;40:ex=01;31;40:'
 export EDITOR=vim
 alias ls="ls --color=auto"

@@ -1,8 +1,9 @@
-all: readdir readdir-lstat
+OBJS = readdir readdir-lstat readdir-suffix
+all: $(OBJS)
 
 .PHONY: clean
 
 CFLAGS=-Wall
 
 clean:
-	rm -f readdir *.o
+	rm -f $(OBJS) *.o
