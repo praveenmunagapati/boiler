@@ -51,6 +51,9 @@ char *map(char *file, size_t *len) {
     goto done;
   }
 
+  /* only files with a non-zero length can map successfully */
+  if (s.st_size == 0) fprintf(stderr,"%s: zero size\n", file);
+
   buf = mmap(0, s.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
   if (buf == MAP_FAILED) {
     fprintf(stderr, "mmap %s: %s\n", file, strerror(errno));

@@ -60,8 +60,22 @@ The programs `create.c`, `insert.c`, and `select.c` show basic C API usage.
   name: ben age 8
   name: isaac age 13
 
+#### Directory scan example
+
 There is an example of scanning a directory tree and populating a table of
-filenames in `tree_to_db.c`.
+filenames in `scan_files.c`. The first usage builds the database. The second
+prints it (`-p`).
+
+    ./scan_files -b files.db -d /usr/share/dict
+    ./scan_files -b files.db -p
+
+The example `scan_lines.c` takes it a step further, scanning all the files
+it finds in the directory tree, producing a table of line offsets in each file.
+(In the resulting records, sequences of newlines are reduced to one record,
+and leading or trailing newlines in the file are ignored).
+
+    ./scan_lines -b tmp.db -d /usr/share/dict
+    ./scan_lines -b tmp.db -p | head
 
 ## SQLite Documentation
 
@@ -109,6 +123,8 @@ be done as a REPLACE instead of a DELETE/INSERT.
 
 ## Examples
 
+## Basic
+
 A few examples of SQL to jog the memory:
 
     CREATE TABLE IF NOT EXISTS files (name TEXT PRIMARY KEY, size INTEGER);
@@ -116,4 +132,17 @@ A few examples of SQL to jog the memory:
     DELETE FROM files WHERE name = "blue";
     SELECT SUM(size) from files;
     INSERT OR REPLACE INTO files VALUES ("red", 100);
+
+## Join
+
+    CREATE TABLE files (name TEXT PRIMARY KEY, id INTEGER);
+    CREATE TABLE lines (id INTEGER, pos INTEGER, sortkey INTEGER);
+    SELECT f.name, l.pos, l.sortkey FROM files f, lines l WHERE l.id = f.id
+
+### Join with group by
+
+    SELECT l.id, name, count(*) 
+    FROM lines l, files f 
+    WHERE l.id = f.id 
+    GROUP BY l.id;
 

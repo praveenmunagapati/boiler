@@ -1,4 +1,4 @@
-PROGS=simple select insert create replace tree_to_db
+PROGS=simple select insert create replace scan_files scan_lines
 OBJS=$(patsubst %,%.o,$(PROGS))
 
 CFLAGS=-g -Wall -Wextra

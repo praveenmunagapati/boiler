@@ -1,5 +1,7 @@
 #include <sys/types.h>
+#include <sys/fcntl.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
@@ -15,9 +17,9 @@
  * populate table from a directory tree
  *
  * this is an example of building a table
- * from a recursive directory scan. it is
- * useful as a starting point - this demo
- * inserts only the filenames and an id
+ * from a recursive directory scan. 
+ * there are two tables: the files table
+ * and the lines table.
  *
  */
 
@@ -37,6 +39,7 @@ struct {
   sqlite3 *db;
   sqlite3_stmt *insert_stmt;
   sqlite3_stmt *select_stmt;
+  sqlite3_stmt *insert_rcrd;
   int truncate;
 
 
@@ -105,7 +108,9 @@ int setup_db(void) {
     goto done;
   }
 
-  /* create table */
+  /* 
+   * files table 
+   */
   sql = "CREATE TABLE IF NOT EXISTS files (name TEXT PRIMARY KEY, id INTEGER);";
   if (exec_sql(CF.db, sql) < 0) goto done;
 
@@ -123,9 +128,35 @@ int setup_db(void) {
     goto done;
   }
 
+  /* 
+   * lines table 
+   */
+  sql = "CREATE TABLE IF NOT EXISTS lines "
+        "(id INTEGER, pos INTEGER, sortkey INTEGER);";
+  if (exec_sql(CF.db, sql) < 0) goto done;
+
+  /* truncate optionally */
+  if ((CF.mode == mode_build) && CF.truncate) {
+    sql = "DELETE FROM lines;";
+    if (exec_sql(CF.db, sql) < 0) goto done;
+  }
+
+  /* index */
+  sql = "CREATE INDEX IF NOT EXISTS bykey ON lines(sortkey);";
+  if (exec_sql(CF.db, sql) < 0) goto done;
+
   /* prepare select statement */
-  sql = "select name, id from files;";
+  sql = "select f.name, l.pos, l.sortkey from files f, lines l "
+        "where l.id = f.id;";
   sc = sqlite3_prepare_v2(CF.db, sql, -1, &CF.select_stmt, NULL);
+  if( sc!=SQLITE_OK ){
+    fprintf(stderr, "sqlite3_prepare: %s\n", sqlite3_errstr(sc));
+    goto done;
+  }
+
+  /* prepare insert statement - we substitute values in later */
+  sql = "insert into lines values ($ID, $POS, $SORTKEY);";
+  sc = sqlite3_prepare_v2(CF.db, sql, -1, &CF.insert_rcrd, NULL);
   if( sc!=SQLITE_OK ){
     fprintf(stderr, "sqlite3_prepare: %s\n", sqlite3_errstr(sc));
     goto done;
@@ -138,17 +169,15 @@ int setup_db(void) {
 }
 
 int print_db(void) {
-	int rc = -1, id, file_count=0;
-	const unsigned char *name;
+  const unsigned char *name;
+  int rc = -1, pos, num;
 
   while (sqlite3_step(CF.select_stmt) == SQLITE_ROW) {
-		name = sqlite3_column_text(CF.select_stmt, 0);
-		id = sqlite3_column_int(CF.select_stmt, 1);
-		printf("%s %d\n", name, id);
-    file_count++;
+    name = sqlite3_column_text(CF.select_stmt, 0);
+    num = sqlite3_column_int(CF.select_stmt, 2);
+    pos = sqlite3_column_int(CF.select_stmt, 1);
+    printf("%s: line %d: byte: 0x%x\n", name, num, pos);
   }
-
-  printf("%d files\n", file_count);
 
   rc = 0;
 
@@ -176,11 +205,46 @@ int reset(sqlite3_stmt *ps) {
   return rc;
 }
 
+/* maps a file into memory. caller should clean up
+ * by calling munmap(buf,len) when done with file */
+char *map(char *file, size_t *len) {
+  int fd = -1, rc = -1;
+  char *buf = NULL;
+  struct stat s;
+
+  *len = 0;
+
+  if ( (fd = open(file, O_RDONLY)) == -1) {
+    fprintf(stderr,"open %s: %s\n", file, strerror(errno));
+    goto done;
+  }
+
+  if (fstat(fd, &s) == -1) {
+    fprintf(stderr,"fstat %s: %s\n", file, strerror(errno));
+    goto done;
+  }
+
+  buf = (s.st_size > 0) ?
+        mmap(0, s.st_size, PROT_READ, MAP_PRIVATE, fd, 0) :
+        NULL;
+  if (buf == MAP_FAILED) {
+    fprintf(stderr, "mmap %s: %s\n", file, strerror(errno));
+    goto done;
+  }
+
+  rc = 0;
+  *len = s.st_size;
+
+ done:
+  if (fd != -1) close(fd);
+  if ((rc < 0) && (buf != NULL) && (buf != MAP_FAILED)) munmap(buf, s.st_size);
+  return (rc < 0) ? NULL : buf;
+}
+
+
 int insert_file(sqlite3_stmt *ps, char *name, int id) {
   int sc, rc = -1;
   
-  if (CF.verbose) fprintf(stderr, "inserting %s id %d\n", name, id);
-
   sc = sqlite3_bind_text(ps, 1, name, -1, SQLITE_TRANSIENT);
   if (sc != SQLITE_OK) {
     fprintf(stderr, "sqlite3_bind_text: %s\n", sqlite3_errstr(sc));
@@ -208,12 +272,83 @@ int insert_file(sqlite3_stmt *ps, char *name, int id) {
   return rc;
 }
 
+int insert_line(sqlite3_stmt *ps, int id, size_t pos, int key) {
+  int sc, rc = -1;
+  
+  sc = sqlite3_bind_int( ps, 1, id);
+  if (sc != SQLITE_OK) {
+    fprintf(stderr, "sqlite3_bind_int: %s\n", sqlite3_errstr(sc));
+    goto done;
+  }
+
+  sc = sqlite3_bind_int( ps, 2, pos);
+  if (sc != SQLITE_OK) {
+    fprintf(stderr, "sqlite3_bind_int: %s\n", sqlite3_errstr(sc));
+    goto done;
+  }
+
+  sc = sqlite3_bind_int( ps, 3, key);
+  if (sc != SQLITE_OK) {
+    fprintf(stderr, "sqlite3_bind_int: %s\n", sqlite3_errstr(sc));
+    goto done;
+  }
+
+  /* insert */
+  sc = sqlite3_step(ps);
+  if (sc != SQLITE_DONE) {
+    fprintf(stderr,"sqlite3_step: unexpected result\n");
+    goto done;
+  }
+
+  if (reset(ps) < 0) goto done;
+
+  rc = 0;
+
+ done:
+  return rc;
+}
+
+/* scan file and enter its lines into table */
+int get_lines(sqlite3_stmt *ps, char *file, int id) {
+  char *buf=NULL;
+  int sc, rc = -1, key=0;
+  size_t len;
+
+  /* if this call fails, because the file has 0-length, (etc),
+     it will give us a NULL buf and zero len; rest is no-op */
+  buf = map(file, &len);
+
+  /* in this example we're looking for line delimiters */
+  char *p = buf;
+  char *eob = buf + len;
+  while(p < eob) {
+    while((*p == '\n') && (p < eob)) p++; /* squeeze leading newlines */
+    if (p < eob) {
+      sc = insert_line(ps, id, p-buf, key);
+      if (sc < 0) goto done;
+      key++;
+    }
+    while((*p != '\n') && (p < eob)) p++; /* find end of current line */
+  }
+
+  rc = 0;
+
+ done:
+  if (buf) munmap(buf, len);
+  return rc;
+}
+
 int add_file(char *file) {
   int rc = -1, sc;
 
   /* add file reference to file table */
   sc = insert_file(CF.insert_stmt, file, CF.file_id);
   if (sc < 0) goto done;
+
+  /* open the file up, find lines, insert them */
+  sc = get_lines(CF.insert_rcrd, file, CF.file_id);
+  if (sc < 0) goto done;
+
   CF.file_id++;
   
   rc = 0;
@@ -254,7 +389,7 @@ int add_dir(char *dir) {
   struct stat s;
   size_t l, el;
 
-	if (CF.verbose) fprintf(stderr, "adding directory %s\n", dir);
+  if (CF.verbose) fprintf(stderr, "adding directory %s\n", dir);
 
   l = strlen(dir);
   d = opendir(dir);
@@ -317,6 +452,13 @@ int release_db(void) {
 
   /* done with insert statement */
   sc = sqlite3_finalize(CF.insert_stmt);
+  if (sc != SQLITE_OK) {
+    fprintf(stderr,"sqlite3_finalize: %s\n", sqlite3_errstr(sc));
+    goto done;
+  }
+
+  /* done with insert statement */
+  sc = sqlite3_finalize(CF.insert_rcrd);
   if (sc != SQLITE_OK) {
     fprintf(stderr,"sqlite3_finalize: %s\n", sqlite3_errstr(sc));
     goto done;
