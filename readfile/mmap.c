@@ -15,34 +15,41 @@ void usage(char *prog) {
 }
  
 char *map(char *file, size_t *len) {
+  int fd = -1, rc = -1;
+  char *buf = NULL;
   struct stat s;
-  char *buf;
-  int fd;
+
+  *len = 0;
 
   if ( (fd = open(file, O_RDONLY)) == -1) {
-      fprintf(stderr,"can't open %s: %s\n", file, strerror(errno));
-      exit(-1);
+    fprintf(stderr,"open %s: %s\n", file, strerror(errno));
+    goto done;
   }
+
   if (fstat(fd, &s) == -1) {
-      close(fd);
-      fprintf(stderr,"can't stat %s: %s\n", file, strerror(errno));
-      exit(-1);
+    fprintf(stderr,"fstat %s: %s\n", file, strerror(errno));
+    goto done;
   }
-  *len = s.st_size;
+
   buf = mmap(0, s.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
   if (buf == MAP_FAILED) {
-    close(fd);
-    fprintf(stderr, "failed to mmap %s: %s\n", file, strerror(errno));
-    exit(-1);
+    fprintf(stderr, "mmap %s: %s\n", file, strerror(errno));
+    goto done;
   }
-  /* don't: close(fd); */
-  return buf;
+
+  rc = 0;
+  *len = s.st_size;
+
+ done:
+  if (fd != -1) close(fd);
+  if ((rc < 0) && (buf != NULL) && (buf != MAP_FAILED)) munmap(buf, s.st_size);
+  return (rc < 0) ? NULL : buf;
 }
 
 int main(int argc, char * argv[]) {
-  int opt;
-  char *file, *buf;
+  char *file, *buf=NULL;
   size_t len;;
+  int opt;
  
   while ( (opt = getopt(argc, argv, "v+")) != -1) {
     switch (opt) {
@@ -58,5 +65,10 @@ int main(int argc, char * argv[]) {
   if (optind < argc) file=argv[optind++];
   else usage(argv[0]);
   buf = map(file, &len);
-  printf("mmap'd %s: %u bytes\n", file, (unsigned)len);
+  if (buf == NULL) goto done;
+
+  printf("mmap'd %s at %p: %lu bytes\n", file, buf, (long unsigned)len);
+ 
+ done:
+  if (buf) munmap(buf, len);
 }
