@@ -4,24 +4,36 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <mqueue.h>
+
+/*
+ *  demonstrate unlinking a POSIX message queue 
+ *
+ *  usage:
+ *
+ *     ./mq-unlink /foo
+ *
+ *  see:
+ *     mq_overview(7)
+ *     mq_unlink(3)
+ *
+ */
 
 struct {
   char *prog;
   int verbose;
-  char *file; /* file to read. if null, read stdin */
-  int fd;     /* input file descriptor def.0=stdin */
-} CF = {
-  .fd = -1,
-};
+  char *name;
+} CF;
 
-void usage() {
-  fprintf(stderr,"usage: %s [-v] <file>\n", CF.prog);
+void usage(void) {
+  fprintf(stderr,"usage: %s [-v] <name>\n", CF.prog);
   exit(-1);
 }
 
 int main(int argc, char *argv[]) {
-  int opt, rc=-1;
-  
+  int opt, rc=-1, sc;
+
   CF.prog = argv[0];
 
   while ( (opt = getopt(argc,argv,"vh")) > 0) {
@@ -33,16 +45,15 @@ int main(int argc, char *argv[]) {
 
   if (optind >= argc) usage();
 
-  CF.file = argv[optind++];
-  CF.fd = open(CF.file ,O_RDONLY);
-  if (CF.fd == -1) {
-    fprintf(stderr,"open %s: %s\n", CF.file, strerror(errno));
+  CF.name = argv[optind++];
+  sc = mq_unlink(CF.name);
+  if (sc == (mqd_t)-1) {
+    fprintf(stderr,"mq_unlink %s: %s\n", CF.name, strerror(errno));
     goto done;
   }
 
   rc = 0;
  
  done:
-  if (CF.fd != -1) close(CF.fd);
   return rc;
 }
