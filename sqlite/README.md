@@ -133,6 +133,11 @@ A few examples of SQL to jog the memory:
     SELECT SUM(size) from files;
     INSERT OR REPLACE INTO files VALUES ("red", 100);
 
+A multi-column primary key:
+
+    CREATE TABLE lines (id INTEGER, pos INTEGER, sortkey INTEGER, 
+                        CONSTRAINT pk PRIMARY KEY (id, pos));
+
 ## Join
 
     CREATE TABLE files (name TEXT PRIMARY KEY, id INTEGER);
